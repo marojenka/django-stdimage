@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
@@ -7,6 +8,8 @@ from django.core.files.storage import get_storage_class
 from django.core.management import BaseCommand, CommandError
 
 from stdimage.utils import render_variations
+
+logger = logging.getLogger()
 
 
 class Command(BaseCommand):
@@ -24,8 +27,16 @@ class Command(BaseCommand):
                             default=False,
                             help='Replace existing files.')
 
+        parser.add_argument('--igrnore-missing',
+                            action='store_true',
+                            dest='igrnore_missing',
+                            default=False,
+                            help='Do not rise exception on missing file '
+                                 'and use log.error instead.')
+
     def handle(self, *args, **options):
         replace = options.get('replace', False)
+        igrnore_missing = options.get('igrnore_missing', False)
         routes = options.get('field_path', [])
         for route in routes:
             try:
@@ -48,10 +59,10 @@ class Command(BaseCommand):
             images = queryset.values_list(field_name, flat=True).iterator()
             count = queryset.count()
 
-            self.render(field, images, count, replace, do_render)
+            self.render(field, images, count, replace, igrnore_missing, do_render)
 
     @staticmethod
-    def render(field, images, count, replace, do_render):
+    def render(field, images, count, replace, igrnore_missing, do_render):
         kwargs_list = (
             dict(
                 file_name=file_name,
@@ -60,6 +71,7 @@ class Command(BaseCommand):
                 replace=replace,
                 storage=field.storage.deconstruct()[0],
                 field_class=field.attr_class,
+                igrnore_missing=igrnore_missing,
             )
             for file_name in images
         )
@@ -77,9 +89,16 @@ class Command(BaseCommand):
 
 def render_field_variations(kwargs):
     kwargs['storage'] = get_storage_class(kwargs['storage'])()
+    igrnore_missing = kwargs.pop('igrnore_missing')
     do_render = kwargs.pop('do_render')
-    if callable(do_render):
-        kwargs.pop('field_class')
-        do_render = do_render(**kwargs)
-    if do_render:
-        render_variations(**kwargs)
+    try:
+        if callable(do_render):
+            kwargs.pop('field_class')
+            do_render = do_render(**kwargs)
+        if do_render:
+            render_variations(**kwargs)
+    except FileNotFoundError as e:
+        if not igrnore_missing:
+            raise
+        else:
+            logger.error(str(e))
