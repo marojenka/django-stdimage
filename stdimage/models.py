@@ -80,7 +80,7 @@ class StdImageFieldFile(ImageFieldFile):
 
     @classmethod
     def process_variation(cls, variation, image):
-        """Method to process variation before actual saving."""
+        """Process variation before actual saving."""
         save_kargs = {}
         file_format = image.format
         save_kargs['format'] = file_format
