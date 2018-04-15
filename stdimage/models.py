@@ -62,9 +62,10 @@ class StdImageFieldFile(ImageFieldFile):
         if storage.exists(variation_name):
             if replace:
                 storage.delete(variation_name)
-                logger.info('File "{}" already exists and has been replaced.')
+                logger.info('File "{}" already exists and has been replaced.',
+                            variation_name)
             else:
-                logger.info('File "{}" already exists.')
+                logger.info('File "{}" already exists.', variation_name)
                 return variation_name
 
         resample = variation['resample']
