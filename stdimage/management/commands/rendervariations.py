@@ -59,7 +59,8 @@ class Command(BaseCommand):
             images = queryset.values_list(field_name, flat=True).iterator()
             count = queryset.count()
 
-            self.render(field, images, count, replace, igrnore_missing, do_render)
+            self.render(field, images, count, replace, igrnore_missing,
+                        do_render)
 
     @staticmethod
     def render(field, images, count, replace, igrnore_missing, do_render):
