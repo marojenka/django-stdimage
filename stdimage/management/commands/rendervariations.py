@@ -27,16 +27,16 @@ class Command(BaseCommand):
                             default=False,
                             help='Replace existing files.')
 
-        parser.add_argument('--igrnore-missing',
+        parser.add_argument('--ignore-missing',
                             action='store_true',
-                            dest='igrnore_missing',
+                            dest='ignore_missing',
                             default=False,
                             help='Do not rise exception on missing file '
                                  'and use log.error instead.')
 
     def handle(self, *args, **options):
         replace = options.get('replace', False)
-        igrnore_missing = options.get('igrnore_missing', False)
+        ignore_missing = options.get('ignore_missing', False)
         routes = options.get('field_path', [])
         for route in routes:
             try:
@@ -59,11 +59,11 @@ class Command(BaseCommand):
             images = queryset.values_list(field_name, flat=True).iterator()
             count = queryset.count()
 
-            self.render(field, images, count, replace, igrnore_missing,
+            self.render(field, images, count, replace, ignore_missing,
                         do_render)
 
     @staticmethod
-    def render(field, images, count, replace, igrnore_missing, do_render):
+    def render(field, images, count, replace, ignore_missing, do_render):
         kwargs_list = (
             dict(
                 file_name=file_name,
@@ -72,7 +72,7 @@ class Command(BaseCommand):
                 replace=replace,
                 storage=field.storage.deconstruct()[0],
                 field_class=field.attr_class,
-                igrnore_missing=igrnore_missing,
+                ignore_missing=ignore_missing,
             )
             for file_name in images
         )
@@ -90,7 +90,7 @@ class Command(BaseCommand):
 
 def render_field_variations(kwargs):
     kwargs['storage'] = get_storage_class(kwargs['storage'])()
-    igrnore_missing = kwargs.pop('igrnore_missing')
+    ignore_missing = kwargs.pop('ignore_missing')
     do_render = kwargs.pop('do_render')
     try:
         if callable(do_render):
@@ -99,7 +99,7 @@ def render_field_variations(kwargs):
         if do_render:
             render_variations(**kwargs)
     except FileNotFoundError as e:
-        if not igrnore_missing:
+        if not ignore_missing:
             raise
         else:
             logger.error(str(e))

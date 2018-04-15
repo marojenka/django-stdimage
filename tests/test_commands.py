@@ -83,6 +83,26 @@ class TestRenderVariations:
         after = os.path.getmtime(file_path)
         assert before != after
 
+    def test_ignore_missing(self, image_upload_file):
+        obj = ThumbnailModel.objects.create(image=image_upload_file)
+        file_path = obj.image.path
+        assert os.path.exists(file_path)
+        os.remove(file_path)
+        assert not os.path.exists(file_path)
+        time.sleep(1)
+        with pytest.raises(FileNotFoundError):
+            call_command(
+                'rendervariations',
+                'tests.ThumbnailModel.image',
+                replace=True,
+            )
+        call_command(
+            'rendervariations',
+            'tests.ThumbnailModel.image',
+            '--ignore-missing',
+            replace=True,
+        )
+
     def test_none_default_storage(self, image_upload_file):
         obj = MyStorageModel.customer_manager.create(
             image=image_upload_file
