@@ -1,4 +1,3 @@
-import logging
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
@@ -8,8 +7,6 @@ from django.core.files.storage import get_storage_class
 from django.core.management import BaseCommand, CommandError
 
 from stdimage.utils import render_variations
-
-logger = logging.getLogger()
 
 
 class Command(BaseCommand):
@@ -27,12 +24,12 @@ class Command(BaseCommand):
                             default=False,
                             help='Replace existing files.')
 
-        parser.add_argument('--ignore-missing',
+        parser.add_argument('-i', '--ignore-missing',
                             action='store_true',
                             dest='ignore_missing',
                             default=False,
-                            help='Do not rise exception on missing file '
-                                 'and use log.error instead.')
+                            help='Ignore missing source file error and '
+                                 'skip render for that file')
 
     def handle(self, *args, **options):
         replace = options.get('replace', False)
@@ -100,6 +97,6 @@ def render_field_variations(kwargs):
             render_variations(**kwargs)
     except FileNotFoundError as e:
         if not ignore_missing:
-            raise
-        else:
-            logger.error(str(e))
+            raise CommandError(
+                 'Source file was not found, terminating. '
+                 'Use -i/--ignore-missing to skip this error.') from e
